@@ -1,5 +1,16 @@
 # PGConf India 2023
 
+```sql
+SELECT
+  'PGConf' as conference_name,
+  2023 as edition,
+  'Introduction to Data Science' as workshop_title,
+  'Jônatas Davi Paganini' as author,
+  'jonatas@timescale.com' as author_mail
+```
+
+# Welcome
+
 ### Timescaledb
 #### &
 ### Toolkit
@@ -149,8 +160,7 @@ On psql we can enable timing to check the performance of every command:
 ## Counting
 
 ```sql
- SELECT count(1) FROM weather_metrics; # => 4092484
-Time: 227.889 ms
+SELECT count(1) FROM weather_metrics;
 ```
 
 ## Approx. row count
@@ -159,8 +169,7 @@ Timescaledb offers a different counting approach that is very approximate to
 real counter.
 
 ```sql
-SELECT approximate_row_count('weather_metrics') ; # => 4092484
-Time: 14.310 ms
+SELECT approximate_row_count('weather_metrics');
 ```
 
 Note that `220 / 14` = **16 times faster**.
@@ -191,7 +200,7 @@ The **Hypertable** 5WH!
 
 ## Explore
 
-Explring the Time Series Data and starting answering a few questions.
+Exploring the Time Series Data and starting answering a few questions.
 
 ## Questions
 
@@ -589,57 +598,33 @@ rollup(hourly_agg) AS daily_agg
 FROM ny_hourly_agg group by 1;
 ```
 
-not allowed, but can save processing with regular views:
+## Candlesticks
 
 ```sql
-CREATE VIEW ny_daily_agg AS
-SELECT time_bucket('1 day',bucket),
-    rollup(hourly_agg) AS daily_agg
-FROM ny_hourly_agg GROUP BY 1;
-```
-
-# Candlesticks
-
-Ticks table:
-
-```sql
-CREATE TABLE ticks
-( time TIMESTAMPTZ NOT NULL,
-    symbol varchar,
-    price double precision,
-    volume int);
-
-SELECT create_hypertable('ticks', 'time', chunk_time_interval => INTERVAL '1 day');
-```
-
-# Caggs
-
-```sql
-CREATE MATERIALIZED VIEW _ohlcv_1m
+CREATE MATERIALIZED VIEW weather_hourly
 WITH (timescaledb.continuous) AS
-    SELECT time_bucket('1 minute'::interval, time),
+    SELECT time_bucket('1 hour'::interval, time),
       symbol,
-      toolkit_experimental.ohlc(time, price),
-      sum(volume) as volume
-    FROM ticks
+      toolkit_experimental.candlestick_agg(time, temp_c)
+    FROM weather_metrics
     GROUP BY 1,2 WITH DATA;
 ```
 
 # View
 
 ```sql
-SELECT time_bucket,
-  symbol,
-  toolkit_experimental.open(ohlc),
-  toolkit_experimental.open_time(ohlc),
-  toolkit_experimental.high(ohlc),
-  toolkit_experimental.high_time(ohlc),
-  toolkit_experimental.low(ohlc),
-  toolkit_experimental.low_time(ohlc),
-  toolkit_experimental.close(ohlc),
-  toolkit_experimental.close_time(ohlc),
-  volume
-FROM _ohlcv_1m;
+SELECT symbol, time_bucket,
+  toolkit_experimental.open(candlestick),
+  toolkit_experimental.high(candlestick),
+  toolkit_experimental.low(candlestick),
+  toolkit_experimental.close(candlestick),
+  toolkit_experimental.open_time(candlestick),
+  toolkit_experimental.high_time(candlestick),
+  toolkit_experimental.low_time(candlestick),
+  toolkit_experimental.close_time(candlestick),
+  toolkit_experimental.volume(candlestick),
+  toolkit_experimental.vwap(candlestick)
+FROM weather_hourly;
 ```
 
 # Correlation
