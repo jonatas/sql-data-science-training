@@ -243,6 +243,45 @@ select min(time), max(time) from weather_metrics
 select city_name, count(*) from weather_metrics group by 1;
 ```
 
+# Plotting
+
+X and Y
+
+```sql
+SELECT
+  x, random() as y
+FROM
+  generate_series(
+  TIMESTAMP '2000-01-01 00:00:00',
+  TIMESTAMP '2000-01-01 00:01:00',
+INTERVAL '1 second') x
+```
+
+## type
+
+
+```sql
+SELECT
+'bar' as type,
+   array_agg(random() * 100) as y,
+  array_agg(g) as x
+FROM
+  generate_series(
+    now() - INTERVAL '1 hour',
+    now(),
+    INTERVAL '1 minute') g group by 1
+```
+
+## title
+
+```sql
+select
+  'Total records per city' as title,
+  'bar' as type,
+  city_name as x,
+  count(*) y from weather_metrics group by 1,2,3;
+```
+
 ## Avg
 
 > What was the average temperature over all times?
@@ -260,7 +299,7 @@ select city_name, avg(temp_c) from weather_metrics  group by 1;
 ```sql
 select avg(temp_c) from weather_metrics
 where city_name = 'New York'
-and time between '2023-01-01' and '2023-01-31';
+and time between '2022-01-01' and '2022-01-31';
 ```
 
 ## Partitions
@@ -273,7 +312,7 @@ Let's run EXPLAIN ANALYZE in the previous query:
 EXPLAIN ANALYZE
 select avg(temp_c) from weather_metrics
 where city_name = 'New York'
-and time between '2023-01-01' and '2023-01-31';
+and time between '2022-01-01' and '2022-01-31';
 ```
 
 ## Explain

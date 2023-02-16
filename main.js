@@ -18,31 +18,88 @@ const all = (e) =>  document.querySelectorAll(e);
 function runSelectStatements(){
   const sql_blocks = all("code[class*='language-sql']");
 
-
   for (let i = 0; i < sql_blocks.length; i++) {
     sql_blocks[i].addEventListener("click", function() {
       if (this.innerText.trim().toLowerCase().startsWith("select")) {
-        fetch("/query", {
-          method: "post",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: this.innerText })
-        })
-          .then(response => response.json())
-          .then(data => {
-            const result_tab = this.parentNode.nextElementSibling;
-            result_tab.innerHTML = "";
-
-            for (let row of data) {
-              let row_html = "<tr>";
-              for (let col in row) {
-                row_html += `<td>${row[col]}</td>`;
-              }
-              row_html += "</tr>";
-              result_tab.innerHTML += row_html;
-            }
-          });
+        fetchQuery(this);
       }
     });
+  }
+}
+
+function fetchQuery(element) {
+  query = element.innerText;
+  fetch("/query", {
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query })
+  })
+    .then(response => response.json())
+    .then(data => renderResult(data, element));
+}
+
+function plot(data, element){
+  let layout = {};
+  if (!Array.isArray(data[0].x)) {
+    let x, y;
+    x = data.map(row => row.x);
+    y = data.map(row => row.y);
+    type = data.type || data[0].type || "scatter";
+    data = [{x, y, type }]
+    title = data.title || data[0].title;
+    layout = {title}
+  }
+  div = document.createElement("div");
+  element.appendChild(div);
+  Plotly.newPlot(div, data, layout);
+}
+
+function table(data, element){
+  // Render the result as a table
+  let table = document.createElement("table");
+  let thead = document.createElement("thead");
+  let tbody = document.createElement("tbody");
+  let headerRow = document.createElement("tr");
+
+  table.style.border =
+    thead.style.border =
+      tbody.style.border = "0.4px dotted";
+
+  Object.keys(data[0]).forEach(key => {
+    let headerCell = document.createElement("th");
+    headerCell.textContent = key;
+    headerRow.appendChild(headerCell);
+  });
+
+  thead.appendChild(headerRow);
+
+  data.forEach(serie=> {
+    if (!Array.isArray(serie)){
+      serie = [serie];
+    }
+    serie.forEach(row => {
+      let dataRow = document.createElement("tr");
+      Object.values(row).forEach(value => {
+        let dataCell = document.createElement("td");
+        dataCell.textContent = value;
+        dataRow.appendChild(dataCell);
+      });
+      tbody.appendChild(dataRow);
+    });
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+  });
+
+  element.parentNode.nextElementSibling.appendChild(table);
+}
+
+function renderResult(res, element) {
+  let data = Array.isArray(res) ? res : [res];
+  if (data[0].hasOwnProperty("x")){
+    plot(data, element);
+  } else {
+    table(data, element);
   }
 }
 

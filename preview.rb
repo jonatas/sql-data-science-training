@@ -1,7 +1,6 @@
 require 'sinatra'
 require 'redcarpet'
 require 'pg'
-require 'plotly'
 require 'json'
 
 def pg_uri
@@ -49,6 +48,7 @@ get '/' do
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.17.1/themes/prism-okaidia.min.css" />
       <script src="https://cdn.jsdelivr.net/npm/prismjs@1.17.1/prism.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/prismjs@1.17.1/components/prism-sql.min.js"></script>
+      <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
       <script type="text/javascript" src="main.js"></script>
     </head>
     <button id="first-slide">⏮</button>
@@ -67,6 +67,27 @@ get '/main.js' do
   send_file File.join(settings.public_folder, 'main.js')
 end
 
+def parse_aggregated_results(data)
+  data.map do |hash|
+    hash.transform_values{|e|cast_results(e)}
+  end
+end
+def cast_results(e)
+  return [] unless e
+  return e unless e.start_with?("{") && e.end_with?("}")
+  e[1..-2].split(",").map{|f|cast_result(f)}
+end
+
+def cast_result(element)
+  case element
+  when /^\d+\.\d+$/
+    element.to_f
+  when /^"\d{4}-\d{2}-\d{2}\s.+"$/
+    element[1..-2]
+  else
+    element
+  end
+end
 
 post '/query' do
   request.body.rewind
@@ -80,6 +101,7 @@ post '/query' do
       return [500, { message: e.message }.to_json]
     end
   end
+  data = parse_aggregated_results(result)
 
-  [200, result.to_a.to_json]
+  [200, data.to_json]
 end
