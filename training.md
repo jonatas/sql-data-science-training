@@ -37,7 +37,7 @@ SELECT
 3. Practical exercises with the dataset - 1h
 4. Knowledge sharing - 0.5h
 
-> we can have short stops every hour.
+> we can have short breaks each hour.
 
 # Introduction
 
@@ -96,11 +96,29 @@ Use `createdb open_weather` in case you don't have it yet.
 
 > you can use your favorite tool if you want ;)
 
+## Extension
+
+If you don't have timescaledb installed on your database, enable the extension:
+
+```sql
+CREATE EXTENSION timescaledb;
+```
+
+You can skip this step if you're using Timescale Cloud or Timescale docker
+images.
+
 ## Download
 
 Download the repository:
 
 https://github.com/jonatas/sql-data-science-training
+
+Use the `schema.sql` file  for the next few steps if you want. Our steps will
+be:
+
+1. Create table
+2. Create indices
+3. Transform the table into hypertable
 
 ## Table
 
@@ -142,7 +160,7 @@ We'll use the CSVs in the `data` folder from
 ```sql
 \i schema.sql
 \COPY weather_metrics FROM './data/nairobi.csv' DELIMITER ',' CSV HEADER;
-\COPY weather_metrics FROM './data/ny.csv' DELIMITER ',' CSV HEADER;
+\COPY weather_metrics FROM './data/new_york.csv' DELIMITER ',' CSV HEADER;
 \COPY weather_metrics FROM './data/toronto.csv' DELIMITER ',' CSV HEADER;
 \COPY weather_metrics FROM './data/stockholm.csv' DELIMITER ',' CSV HEADER;
 \COPY weather_metrics FROM './data/princeton.csv' DELIMITER ',' CSV HEADER;
@@ -172,9 +190,6 @@ real counter.
 SELECT approximate_row_count('weather_metrics');
 ```
 
-Note that `220 / 14` = **16 times faster**.
-
-
 ## Check
 
 Describe the weather_metrics table:
@@ -200,7 +215,7 @@ The **Hypertable** 5WH!
 
 ## Explore
 
-Exploring the Time Series Data and starting answering a few questions.
+Let's start exploring the Time Series Data and answer a few questions.
 
 ## Questions
 
@@ -209,11 +224,14 @@ Exploring the Time Series Data and starting answering a few questions.
 * How many different cities are available?
 * When the data starts and when it ends?
 * How many records we have per city?
-* What was the average temperature of New York in January.
+* What was the average temperature of New York in January in the last 10 years.
+* What is the hottest and coldest city we're tracking?
+* What is the city that rains more?
+* Choose a city and investigate the season of the city?
 
 ## Distinct
 
-> What are the cities are available?
+> What are the name of the cities available?
 
 ```sql
 SELECT DISTINCT city_name FROM weather_metrics;
@@ -232,7 +250,7 @@ SELECT COUNT(DISTINCT city_name) FROM weather_metrics;
 > When the data starts and when it ends?
 
 ```sql
-select min(time), max(time) from weather_metrics
+SELECT MIN(time), MAX(time) FROM weather_metrics;
 ```
 
 ## Group
@@ -240,46 +258,7 @@ select min(time), max(time) from weather_metrics
 > How many records we have per city?
 
 ```sql
-select city_name, count(*) from weather_metrics group by 1;
-```
-
-# Plotting
-
-X and Y
-
-```sql
-SELECT
-  x, random() as y
-FROM
-  generate_series(
-  TIMESTAMP '2000-01-01 00:00:00',
-  TIMESTAMP '2000-01-01 00:01:00',
-INTERVAL '1 second') x
-```
-
-## type
-
-
-```sql
-SELECT
-'bar' as type,
-   array_agg(random() * 100) as y,
-  array_agg(g) as x
-FROM
-  generate_series(
-    now() - INTERVAL '1 hour',
-    now(),
-    INTERVAL '1 minute') g group by 1
-```
-
-## title
-
-```sql
-select
-  'Total records per city' as title,
-  'bar' as type,
-  city_name as x,
-  count(*) y from weather_metrics group by 1,2,3;
+SELECT city_name, count(*) FROM weather_metrics GROUP BY 1;
 ```
 
 ## Avg
@@ -294,13 +273,26 @@ select city_name, avg(temp_c) from weather_metrics  group by 1;
 
 **Time Series Analysis in SQL and Timescaledb**
 
-> What was the average temperature of NY in the previous month?
+> What was the average temperature of NY in January of 2022?
 
 ```sql
 select avg(temp_c) from weather_metrics
 where city_name = 'New York'
 and time between '2022-01-01' and '2022-01-31';
 ```
+
+## Year bucket
+
+> What was the average temperature of New York in January in the last 10 years.
+
+## Order by
+
+> What is the hottest and coldest city we're tracking?
+
+## Sum
+
+* What is the city that rains more?
+* Choose a city and investigate the season of the city?
 
 ## Partitions
 
@@ -593,17 +585,17 @@ SELECT bucket,
 FROM monthly;
 ```
 
-# num_vals
+# num vals
 
 Querying number of values from pre-computed stats aggs:
 
-```SQL
+```sql
 WITH hourly AS (
   SELECT time_bucket('1 hour'::interval, time) AS bucket,
     stats_agg( temp_c) AS hourly_agg
   FROM weather_metrics
   WHERE city_name = 'New York'
-  AND time BETWEEN '2021-06-01 00:00:00' AND '2022-06-01 01:00:00'
+  AND time BETWEEN '2023-02-01 00:00:00' AND '2023-02-01 12:00:00'
   GROUP BY 1 ORDER BY 1
 )
 SELECT bucket, average(hourly_agg), num_vals(hourly_agg) from hourly;
@@ -752,7 +744,274 @@ GROUP BY 1,2
 $$::text,
 'select distinct city_name from weather_metrics order by 1'::text
 ) as ct(city_name text,
-  "Austin" double precision, "Lisbon" double precision, "Nairobi" double precision, "New York" double precision, "Pietermaritzburg" double precision, "Princeton" double precision, "San Francisco" double precision, "Stockholm" double precision, "Toronto" double precision, "Vienna" double precision);
+  "Nairobi" double precision,
+  "New York" double precision,
+  "Princeton" double precision,
+  "Stockholm" double precision,
+  "Toronto" double precision,
+  "Vienna" double precision);
+```
+
+## Plotting
+
+Time to chart!
+
+```bash
+ruby preview.rb training.md "postgres://jonatasdp@localhost:5432/pgconf-2023"
+```
+
+## X & Y
+
+```sql
+SELECT
+  x, random() as y
+FROM
+  generate_series(
+  TIMESTAMP '2000-01-01 00:00:00',
+  TIMESTAMP '2000-01-01 00:01:00',
+INTERVAL '1 second') x
+```
+
+## type
+
+Type will refer to type chart.
+
+```sql
+SELECT
+'bar' as type,
+   array_agg(random() * 100) as y,
+  array_agg(g) as x
+FROM
+  generate_series(
+    now() - INTERVAL '1 hour',
+    now(),
+    INTERVAL '1 minute') g group by 1
+```
+
+## title
+
+Title will inject the title in the layout.
+
+```sql
+select
+  'Total records per city' as title,
+  'bar' as type,
+  city_name as x,
+  count(*) y from weather_metrics group by 1,2,3;
+```
+
+## name
+
+Name will make it the series name.
+
+```sql
+WITH resume as (
+  select city_name as name,
+  time_bucket('1 hour', time) as x,
+  avg(temp_c) as y
+  from weather_metrics
+  where time between '2022-01-01' and '2023-01-02'
+  group by 1,2
+  order by 1,2
+)
+select name, array_agg(x) as x, array_agg(y) as y
+from resume
+group by 1
+```
+
+## avg
+
+```sql
+select time_bucket('1 month', time) as x,
+  avg(temp_c) as y
+  from weather_metrics
+  where time between '2022-01-01' and '2023-01-02'
+  and city_name = 'New York'
+  group by 1
+  order by 1;
+```
+
+## avg hour
+
+```sql
+select time_bucket('1 hour', time) as x,
+  avg(temp_c) as y
+  from weather_metrics
+  where time between '2022-01-01' and '2023-01-02'
+  and city_name = 'New York'
+  group by 1
+  order by 1;
+```
+
+## percentile
+
+```sql
+with resume as (
+  select time_bucket('1 month', time),
+    percentile_agg(temp_c)
+  from weather_metrics
+  where time between '2022-01-01' and '2023-01-02'
+    and city_name = 'New York'
+  group by 1 order by 1
+)
+select 'p99' as name,
+time_bucket as x,
+approx_percentile(0.99, percentile_agg) as y
+from resume
+order by 2;
+```
+
+## avg vs median - year bucket
+
+```sql
+with resume as (
+  select time_bucket('1 month', time),
+    percentile_agg(temp_c),
+    avg(temp_c) as avg
+  from weather_metrics
+  where time between '2022-01-01' and '2023-01-02'
+    and city_name = 'New York'
+  group by 1 order by 1
+),
+median as (
+  select 'median' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.5, percentile_agg)) as y
+  from resume
+),
+average as (
+  select 'average' as name,
+  array_agg(time_bucket) as x,
+  array_agg(avg) as y
+  from resume
+)
+SELECT * FROM median  UNION ALL
+SELECT * FROM average ;
+```
+
+## avg vs median - daily bucket
+
+```sql
+with resume as (
+  select time_bucket('1 day', time),
+    percentile_agg(temp_c),
+    avg(temp_c) as avg
+  from weather_metrics
+  where time between '2022-01-01' and '2023-01-02'
+    and city_name = 'New York'
+  group by 1 order by 1
+),
+median as (
+  select 'median' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.5, percentile_agg)) as y
+  from resume
+),
+average as (
+  select 'average' as name,
+  array_agg(time_bucket) as x,
+  array_agg(avg) as y
+  from resume
+)
+SELECT * FROM median  UNION ALL
+SELECT * FROM average ;
+```
+
+## uddsketch and tdigest
+
+```sql
+with resume as (
+  select time_bucket('1 year', time),
+    percentile_agg(temp_c),
+    uddsketch(200, 0.001, temp_c),
+    tdigest(200, temp_c),
+    avg(temp_c)
+  from weather_metrics
+  where -- time between '2022-01-01' and '2023-01-02' and
+  city_name = 'New York'
+  group by 1 order by 1
+),
+median as (
+  select 'median' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.5, percentile_agg)) as y
+  from resume
+),
+median_uddsketch as (
+  select 'median uddsketch' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.5, uddsketch)) as y
+  from resume
+),
+median_tdigest as (
+  select 'median uddsketch' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.5, tdigest)) as y
+  from resume
+),
+average as (
+  select 'average' as name,
+  array_agg(time_bucket) as x,
+  array_agg(avg) as y
+  from resume
+)
+SELECT * FROM median UNION ALL
+SELECT * FROM median_uddsketch UNION ALL
+SELECT * FROM median_tdigest UNION ALL
+SELECT * FROM average ;
+```
+
+## p1 and p99
+
+```sql
+with resume as (
+  select time_bucket('1 month', time),
+    percentile_agg(temp_c),
+    avg(temp_c) as avg
+  from weather_metrics
+  where time between '2022-01-01' and '2023-01-02'
+    and city_name = 'New York'
+  group by 1 order by 1
+),
+p1 as (
+  select 'p1' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.01, percentile_agg)) as y
+  from resume
+),
+p99 as (
+  select 'p99' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.99, percentile_agg)) as y
+  from resume
+),
+median as (
+  select 'median' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.5, percentile_agg)) as y
+  from resume
+),
+average as (
+  select 'average' as name,
+  array_agg(time_bucket) as x,
+  array_agg(avg) as y
+  from resume
+)
+SELECT * FROM median  UNION ALL
+SELECT * FROM average UNION ALL
+SELECT * FROM p1      UNION ALL
+SELECT * FROM p99
+```
+
+## lttb
+
+```sql
+with ny as (
+  select (lttb(time, temp_c, 300) -> unnest()).* as pair 
+  from weather_metrics
+  where time between '2022-01-01' and '2023-01-01'
+  and city_name = 'New York'
+) select ny.time as x, ny.value as y from ny;
 ```
 
 # Exercises

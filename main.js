@@ -20,9 +20,7 @@ function runSelectStatements(){
 
   for (let i = 0; i < sql_blocks.length; i++) {
     sql_blocks[i].addEventListener("click", function() {
-      if (this.innerText.trim().toLowerCase().startsWith("select")) {
-        fetchQuery(this);
-      }
+      fetchQuery(this);
     });
   }
 }
@@ -39,18 +37,18 @@ function fetchQuery(element) {
 }
 
 function plot(data, element){
-  let layout = {};
+  title = data.title || data[0].title;
+  let layout = {title}
   if (!Array.isArray(data[0].x)) {
     let x, y;
     x = data.map(row => row.x);
     y = data.map(row => row.y);
     type = data.type || data[0].type || "scatter";
     data = [{x, y, type }]
-    title = data.title || data[0].title;
-    layout = {title}
   }
   div = document.createElement("div");
   element.appendChild(div);
+  console.log("data", data);
   Plotly.newPlot(div, data, layout);
 }
 
