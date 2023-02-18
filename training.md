@@ -291,8 +291,21 @@ and time between '2022-01-01' and '2022-01-31';
 
 ## Sum
 
-* What is the city that rains more?
-* Choose a city and investigate the season of the city?
+> What is the city that rains more?
+
+## Season
+
+> Choose a city and investigate the season of the city?
+
+## Views
+
+Create views for:
+
+* ny view: fix the time zone shift
+* ny_winter: filter only winter days
+* ny_summer: filter only summer days
+
+Use CTEs for minor queries that you're not going to explore further.
 
 ## Partitions
 
