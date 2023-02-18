@@ -4,11 +4,12 @@ This workshop covers the basics of data science with PostgreSQL. The workshop
 includes a tutorial in the form of a Markdown document and a command-line tool
 that parses the Markdown document and serves it as an HTML presentation.
 
-## Requirements
+## Requirements for the training
 
-- Ruby (>= 2.6.0)
 - PostgreSQL
-- Bundler (for installing dependencies)
+- TimescaleDB extension
+
+Or just sign up for [Timescale Cloud](https://cloud.timescale.com).
 
 ## Installation
 
@@ -19,7 +20,11 @@ git clone  https://github.com/jonatas/sql-data-science-training
 cd sql-data-science-training
 ```
 
-## Usage
+## Preview usage
+
+I run almost all my presentation on VIM using [presenting.vim](https://github.com/sotte/presenting.vim)
+but I also build a special markdown preview to allow me to run the examples and plot the data from query results
+to make it clear in some cases.
 
 To run the command-line tool and serve the tutorial as an HTML presentation, run
 the following command:
@@ -44,4 +49,6 @@ The HTML presentation includes the following features:
 - Automatic slide deck creation based on Markdown headers (H1 and H2)
 - Simple plotting of data as a scatter plot when the result contains columns named "x" and "y"
 
+# Sessions
 
+* [PGConf India - 2023](http://pgconf.in/conferences/pgconfin2023)
