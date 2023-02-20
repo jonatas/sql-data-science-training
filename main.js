@@ -122,23 +122,44 @@ function bindPresentationMode(){
   let currentSlide = 0;
   const slides = all(".slide");
 
-  const showCurrentSlide = function() {
-    slides[currentSlide].style.display = "block";
+  const showSlide = function(slideNumber) {
+    slides[currentSlide].style.display = "none";
+    currentSlide = slideNumber;
+    slides[slideNumber].style.display = "block";
   };
 
-  showCurrentSlide();
-  on("#start-presentation").addEventListener("click", function() {
+  const previousSlide = function() {
+    showSlide((currentSlide - 1 + slides.length) % slides.length);
+  };
+
+  const nextSlide = function() {
+    showSlide((currentSlide + 1) % slides.length);
+  }
+
+  const keyboardShortcuts = function(event) {
+    if (event.keyCode === 27) {
+      htmlMode();
+    } else if (event.keyCode === 37) {
+      previousSlide();
+    } else if (event.keyCode === 39) {
+      nextSlide();
+    }
+  };
+
+  const presentationMode = function() {
     slides.forEach(function(slide) {
       slide.style.display = "none";
     });
-    showCurrentSlide();
+    showSlide(currentSlide);
 
     document.body.classList.add("presentation-mode");
     on("#start-presentation").style.display = "none";
     on("#stop-presentation").style.display = "inline";
-  });
-  on("#stop-presentation").addEventListener("click", function() {
 
+    document.addEventListener("keydown", keyboardShortcuts);
+  };
+
+  const htmlMode = function() {
     slides.forEach(function(slide) {
       slide.style.display = "block";
     });
@@ -146,42 +167,19 @@ function bindPresentationMode(){
     document.body.classList.remove("presentation-mode");
     on("#start-presentation").style.display = "inline";
     on("#stop-presentation").style.display = "none";
-  });
 
-  // Add event listener for next slide button
-  on("#next-slide").addEventListener("click", function() {
-    slides[currentSlide].style.display = "none";
-    currentSlide = (currentSlide + 1) % slides.length;
-    showCurrentSlide();
-  });
+    document.removeEventListener("keydown", keyboardShortcuts);
+  };
 
-  // Add event listener for previous slide button
-  on("#previous-slide").addEventListener("click", function() {
-    slides[currentSlide].style.display = "none";
-    currentSlide = (currentSlide - 1 + slides.length) % slides.length;
-    showCurrentSlide();
-  });
+  showSlide(0);
 
-  // Add event listener for first slide button
-  document.querySelector("#first-slide").addEventListener("click", function() {
-    slides[currentSlide].style.display = "none";
-    currentSlide = 0;
-    showCurrentSlide();
-  });
+  on("#start-presentation").addEventListener("click", presentationMode)
+  on("#stop-presentation").addEventListener("click", htmlMode)
+  on("#next-slide").addEventListener("click", nextSlide);
+  on("#previous-slide").addEventListener("click",previousSlide);
 
-  // Add event listener for last slide button
-  document.querySelector("#last-slide").addEventListener("click", function() {
-    slides[currentSlide].style.display = "none";
-    currentSlide = slides.length - 1;
-    showCurrentSlide();
-  });
-
-  // Add event listener for escape key to exit presentation mode
-  document.addEventListener("keydown", function(event) {
-    if (event.code === "Escape") {
-      document.body.classList.remove("presentation-mode");
-    }
-  });
+  document.querySelector("#first-slide").addEventListener("click", event => showSlide(0));
+  document.querySelector("#last-slide").addEventListener("click", event => showSlide(slides.length - 1));
 }
 
 document.addEventListener("DOMContentLoaded", function() {

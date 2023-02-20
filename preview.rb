@@ -59,11 +59,12 @@ class App < Sinatra::Base
       <script src="https://cdn.jsdelivr.net/npm/prismjs@1.17.1/components/prism-sql.min.js"></script>
       <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
       <script type="text/javascript" src="main.js"></script>
+      <link rel="stylesheet" href="main.css">
     </head>
     <button id="first-slide">⏮</button>
     <button id="previous-slide">⬅️</button>
-    <button id="start-presentation">Start presentation</button>
-    <button id="stop-presentation" style="display: none;">Stop presentation</button>
+    <button id="start-presentation">▶️</button>
+    <button id="stop-presentation" style="display: none;">⏹</button>
     <button id="next-slide">➡️</button>
     <button id="last-slide">⏭</button>
     HTML

@@ -330,10 +330,8 @@ EXPLAIN SELECT count(1) FROM weather_metrics;
 
 Partitioned tables can divide and conquer!
 
-```
-->  Parallel Append  (cost=0.29..56957.24 rows=1023114 width=0)                                                                                    │
-│  ->  Parallel Index Only Scan using _hyper_1_...idx on _hyper_1_...
-```
+    ->  Parallel Append  (cost=0.29..56957.24 rows=1023114 width=0)                                                                                    │
+    │  ->  Parallel Index Only Scan using _hyper_1_...idx on _hyper_1_...
 
 ## time bucket
 
@@ -366,8 +364,9 @@ GROUP BY 1 ORDER BY 1;
 
 ## OHLC
 
-    OHLC = Candlestick pattern: capturing Open, High, Low, Close values grouped
-    by a timeframe.
+Candlestick pattern: capture values grouped by a timeframe.
+
+    OHLC = Open, High, Low, Close
 
 ```sql
 SELECT time_bucket('1 hour'::interval, time) AS bucket,
