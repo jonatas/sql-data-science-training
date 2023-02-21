@@ -248,11 +248,10 @@ Let's start exploring the Time Series Data and answer a few questions.
 ## Time zone
 
 ```sql
-SELECT time, timezone_shift,
-  time +  timezone_shift::text::interval AS time_zoned,
+SELECT time +  timezone_shift::text::interval AS time,
   temp_c AS temperature,
   city_name AS city
-FROM weather_metrics;
+FROM weather_metrics ORDER BY 1 DESC LIMIT 5;
 ```
 
 ## Distinct
