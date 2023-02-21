@@ -167,6 +167,8 @@ We'll use the CSVs in the `data` folder from
 \COPY weather_metrics FROM './data/vienna.csv' DELIMITER ',' CSV HEADER;
 ```
 
+> copy commands should be executed line by line
+
 ## Timing
 
 On psql we can enable timing to check the performance of every command:
@@ -188,6 +190,19 @@ real counter.
 
 ```sql
 SELECT approximate_row_count('weather_metrics');
+```
+
+## granularity
+
+    how many records are available per year?
+
+```sql
+select time_bucket('1 year', time) as x,
+  count(*) as y,
+  'bar' as type
+  from weather_metrics
+  group by 1,3
+  order by 1
 ```
 
 ## Check
@@ -221,6 +236,7 @@ Let's start exploring the Time Series Data and answer a few questions.
 
 > Answer with sql
 
+* How to adapt the code to work the city time zone?
 * How many different cities are available?
 * When the data starts and when it ends?
 * How many records we have per city?
@@ -228,6 +244,16 @@ Let's start exploring the Time Series Data and answer a few questions.
 * What is the hottest and coldest city we're tracking?
 * What is the city that rains more?
 * Choose a city and investigate the season of the city?
+
+## Time zone
+
+```sql
+SELECT time, timezone_shift,
+  time +  timezone_shift::text::interval AS time_zoned,
+  temp_c AS temperature,
+  city_name AS city
+FROM weather_metrics;
+```
 
 ## Distinct
 
