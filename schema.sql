@@ -1,5 +1,7 @@
+CREATE EXTENSION timescaledb;
+CREATE EXTENSION timescaledb_toolkit;
 CREATE TABLE public.weather_metrics (
-    "time" timestamp without time zone NOT NULL,
+    "time" timestamptz NOT NULL,
     timezone_shift integer,
     city_name text,
     temp_c double precision,
