@@ -11,10 +11,6 @@ SELECT
 
 # Welcome
 
-### Timescaledb
-#### &
-### Toolkit
-
 #### **Jônatas Davi Paganini**
 #### @jonatasdp
 
@@ -192,9 +188,7 @@ real counter.
 SELECT approximate_row_count('weather_metrics');
 ```
 
-
 # Plotting
-
 
 > $ md-show global_warming.md "postgres://jonatasdp@localhost:5432/openweather"
 
@@ -203,13 +197,30 @@ SELECT approximate_row_count('weather_metrics');
 
 ## X & Y
 
+
 ```sql
 SELECT
   x, random() as y
 FROM
   generate_series(
-  now() - INTERVAL '20 seconds',
-  now(), INTERVAL '1 second') x
+    now() - INTERVAL '20 seconds',
+    now(), INTERVAL '1 second') x
+```
+
+## Sin/Cos
+
+```sql
+SELECT
+  'sin' as name,
+   array_agg(now() + make_interval(hours=>i)) as x,
+   array_agg(sin(i/ 12.0 * PI())) as y
+FROM generate_series(1,168) i
+UNION ALL
+SELECT
+  'cos' as name,
+   array_agg(now() + make_interval(hours=>i)) as x,
+   array_agg(cos(i/ 12.0 * PI())) as y
+FROM generate_series(1,168) i;
 ```
 
 ## type
@@ -218,14 +229,14 @@ Type will refer to type chart.
 
 ```sql
 SELECT
-'bar' as type,
-   array_agg(random() * 100) as y,
+  'bar' as type,
+  array_agg(random() * 100) as y,
   array_agg(g) as x
 FROM
   generate_series(
     now() - INTERVAL '1 hour',
     now(),
-    INTERVAL '1 minute') g group by 1
+    INTERVAL '1 minute') g GROUP BY 1
 ```
 
 ## title
@@ -233,11 +244,13 @@ FROM
 Title will inject the title in the layout.
 
 ```sql
-select
+SELECT
   'Total records per city' as title,
   'bar' as type,
   city_name as x,
-  count(*) y from weather_metrics group by 1,2,3;
+  count(*) y
+FROM weather_metrics
+GROUP BY 1,2,3;
 ```
 
 ## name
@@ -246,17 +259,17 @@ Name will make it the series name.
 
 ```sql
 WITH resume as (
-  select city_name as name,
-  time_bucket('1 hour', time) as x,
+  SELECT city_name AS name,
+  time_bucket('1 hour', time) AS x,
   avg(temp_c) as y
-  from weather_metrics
-  where time between '2022-01-01' and '2023-01-02'
-  group by 1,2
-  order by 1,2
+  FROM weather_metrics
+  WHERE time BETWEEN '2022-01-01' and '2023-01-02'
+  GROUP BY 1,2
+  ORDER BY 1,2
 )
-select name, array_agg(x) as x, array_agg(y) as y
-from resume
-group by 1
+SELECT name, array_agg(x) as x, array_agg(y) as y
+FROM resume
+GROUP BY 1
 ```
 
 ## avg
@@ -493,7 +506,7 @@ SELECT time_bucket('1 hour'::interval, time) AS bucket,
   last(temp_c, time) as close
 FROM weather_metrics
 WHERE city_name = 'New York'
-  AND time BETWEEN '2022-06-01' AND '2022-06-02'
+  AND time BETWEEN '2022-06-01 06:00:00' AND '2022-06-02 12:00:00'
 GROUP BY 1 ORDER BY 1;
 ```
 
@@ -774,20 +787,16 @@ WITH (timescaledb.continuous) AS
 # View
 
 ```sql
-SELECT time_bucket,
-  open(candlestick),
-  high(candlestick),
-  low(candlestick),
-  close(candlestick),
-  open_time(candlestick),
-  high_time(candlestick),
-  low_time(candlestick),
-  close_time(candlestick),
-  volume(candlestick),
-  vwap(candlestick)
+SELECT
+  time_bucket as x,
+  array_agg(open(candlestick)) as open,
+  array_agg(high(candlestick)) as high,
+  array_agg(low(candlestick)) as low,
+  array_agg(close(candlestick)) as close
 FROM weather_hourly
 WHERE city_name = 'New York'
-ORDER BY time_bucket DESC LIMIT 1;
+GROUP BY 1
+ORDER BY time_bucket DESC LIMIT 30;
 ```
 
 # Correlation
@@ -884,22 +893,73 @@ $$::text,
   "Vienna" double precision);
 ```
 
-## percentile
+## percentile hour
+
+```sql
+with resume as (
+  select time_bucket('1 hour', time),
+    percentile_agg(temp_c)
+  from weather_metrics
+  where time between '2023-01-02' and '2023-01-03'
+    and city_name = 'New York'
+  group by 1 order by 1
+)
+select 'highest' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.99, percentile_agg)) as y
+from resume group by 1
+union all
+select 'lowest' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.01, percentile_agg)) as y
+from resume group by 1
+order by 1,2;
+```
+
+# percentile day
 
 ```sql
 with resume as (
   select time_bucket('1 month', time),
     percentile_agg(temp_c)
   from weather_metrics
-  where time between '2022-01-01' and '2023-01-02'
+  where time between '2010-01-01' and '2023-01-02'
     and city_name = 'New York'
   group by 1 order by 1
 )
-select 'p99' as name,
-time_bucket as x,
-approx_percentile(0.99, percentile_agg) as y
-from resume
-order by 2;
+select 'highest' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.99, percentile_agg)) as y
+from resume group by 1
+union all
+select 'lowest' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.01, percentile_agg)) as y
+from resume group by 1
+order by 1,2;
+```
+
+# percentile year
+
+```sql
+with resume as (
+  select time_bucket('1 year', time),
+    percentile_agg(temp_c)
+  from weather_metrics
+  where time between '1978-01-01' and '2023-01-02'
+    and city_name = 'New York'
+  group by 1 order by 1
+)
+select 'highest' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.99, percentile_agg)) as y
+from resume group by 1
+union all
+select 'lowest' as name,
+  array_agg(time_bucket) as x,
+  array_agg(approx_percentile(0.01, percentile_agg)) as y
+from resume group by 1
+order by 1,2;
 ```
 
 ## avg vs median - year bucket
@@ -954,7 +1014,8 @@ average as (
   array_agg(avg) as y
   from resume
 )
-SELECT * FROM median  UNION ALL
+SELECT * FROM median
+UNION ALL
 SELECT * FROM average ;
 ```
 
@@ -1050,10 +1111,28 @@ SELECT * FROM p99
 with ny as (
   select (lttb(time, temp_c, 300) -> unnest()).* as pair 
   from weather_metrics
-  where time between '2022-01-01' and '2023-01-01'
+  where time between '1978-01-01' and '2023-01-01'
   and city_name = 'New York'
 ) select ny.time as x, ny.value as y from ny;
 ```
+
+## lttb vs avg
+
+> What if I compare lttb with averages from buckets?
+
+```sql
+WITH resume AS (
+  SELECT city_name as name, (lttb(time, temp_c, 720) -> unnest()).* as pair 
+  FROM weather_metrics
+  WHERE time BETWEEN '2022-01-01' AND '2023-01-01'
+  GROUP BY 1
+) SELECT name,
+array_agg(time) AS x,
+array_agg(value) as y
+FROM resume
+GROUP BY 1;
+```
+
 
 # Exercises
 

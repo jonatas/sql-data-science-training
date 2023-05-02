@@ -26,13 +26,18 @@ I run almost all my presentation on VIM using [presenting.vim](https://github.co
 but I also build a special markdown preview to allow me to run the examples and plot the data from query results
 to make it clear in some cases.
 
-To run the command-line tool and serve the tutorial as an HTML presentation, run
-the following command:
+I build [md-show](https://github.com/jonatas/md-show) to help me with my presentations.
+It works as a command-line tool to serve the markdown content as an HTML content
+and I added some extra features to focus in presentation mode, allowing me to
+use it during my talks.
 
+You can install and run it if you have ruby available in your computer.
 
 ```bash
-ruby preview.rb training.md <PG_URI>
+gem install md-show
+md-show training.md <PG_URI>
 ```
+
 
 Where `PG_URI` is a postgresql URI connection. Example: `postgres://jonatasdp@localhost:5432/playground`
 
