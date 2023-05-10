@@ -9,6 +9,42 @@ SELECT
   'jonatas@timescale.com' as author_mail
 ```
 
+# Is Global Warming Real?
+
+> Is NY getting warmer?
+
+```sql
+WITH ny_summer AS (
+    SELECT *
+    FROM public.weather_metrics
+    WHERE city_name = 'New York'
+    AND EXTRACT(MONTH FROM time) IN (6, 7, 8) -- Summer months (June, July, August)
+    AND EXTRACT(HOUR FROM (time + timezone_shift::text::interval)) BETWEEN 12 AND 16 -- Hot hours (12:00 PM to 4:00 PM)
+)
+SELECT time_bucket('1 year', time) AS x,
+    AVG(temp_c) AS y
+FROM ny_summer
+GROUP BY 1
+ORDER BY 1
+```
+
+# Is NY getting colder?
+
+```sql
+WITH ny_winter AS (
+    SELECT *
+    FROM public.weather_metrics
+    WHERE city_name = 'New York'
+    AND EXTRACT(MONTH FROM time) IN (12, 1, 2) -- Winter months (December, January, February)
+    AND EXTRACT(HOUR FROM (time + timezone_shift::text::interval)) BETWEEN 0 AND 4 -- Cold hours (12:00 AM to 4:00 AM)
+)
+SELECT time_bucket('1 year', time) AS x,
+    AVG(temp_c) AS y
+FROM ny_winter
+GROUP BY 1
+ORDER BY 1;
+```
+
 # Welcome
 
 #### **Jônatas Davi Paganini**
@@ -33,7 +69,7 @@ SELECT
 3. Practical exercises with the dataset - 1h
 4. Knowledge sharing - 0.5h
 
-> we can have short breaks each hour.
+> we can have short breaks each hour
 
 # Introduction
 
@@ -81,14 +117,14 @@ https://openweathermap.org
 Interact with open weather dataset via psql:
 
 ```bash
-psql open_weather
+psql openweather
 ```
 
 > you can use your favorite tool if you want ;)
 
 ## Create
 
-Use `createdb open_weather` in case you don't have it yet.
+Use `createdb openweather` in case you don't have it yet.
 
 > you can use your favorite tool if you want ;)
 
@@ -260,10 +296,9 @@ Name will make it the series name.
 ```sql
 WITH resume as (
   SELECT city_name AS name,
-  time_bucket('1 hour', time) AS x,
+  time_bucket('1 year', time) AS x,
   avg(temp_c) as y
   FROM weather_metrics
-  WHERE time BETWEEN '2022-01-01' and '2023-01-02'
   GROUP BY 1,2
   ORDER BY 1,2
 )
@@ -276,12 +311,12 @@ GROUP BY 1
 
 ```sql
 select time_bucket('1 month', time) as x,
-  avg(temp_c) as y
-  from weather_metrics
-  where time between '2022-01-01' and '2023-01-02'
-  and city_name = 'New York'
-  group by 1
-  order by 1;
+AVG(temp_c) as y
+FROM weather_metrics
+WHERE time BETWEEN '2022-01-01' and '2023-01-02'
+AND city_name = 'New York'
+GROUP BY 1
+ORDER BY 1;
 ```
 
 ## avg hour
