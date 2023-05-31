@@ -58,4 +58,4 @@ The HTML presentation includes the following features:
 
 * [PGConf India - 2023](http://pgconf.in/conferences/pgconfin2023)
 * [JOnTheBeach - 2023](https://jonthebeach.com/workshops/Reality-of-global-warming.-Data-Science-with-Postgres-and-TimescaleDB)
-* [PGCon - 2023](https://www.pgcon.org/events/pgcon_2023/schedule/)
+* [PGCon - 2023](https://www.pgcon.org/events/pgcon_2023/schedule/session/359-data-science-with-postgres-introductory-training/)

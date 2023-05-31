@@ -2,9 +2,9 @@
 
 ```sql
 SELECT
-  'JOnTheBeach' as conference_name,
+  'PGCon' as conference_name,
   2023 as edition,
-  'Is Global Warming Real?' as workshop_title,
+  'Data Science with Postgres: Introductory Training' as workshop_title,
   'Jônatas Davi Paganini' as author,
   'jonatas@timescale.com' as author_mail
 ```
