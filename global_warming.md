@@ -885,7 +885,7 @@ WITH city_names AS (
 )
 SELECT a.name as first, b.name as second
   FROM city_names a
-  JOIN city_names b ON true;
+  CROSS JOIN city_names b;
 ```
 
 # Crosstab
@@ -899,7 +899,7 @@ SELECT * FROM crosstab($$
 pairs as (
   SELECT a.name as first, b.name as second
   FROM city_names a
-  JOIN city_names b ON true
+  CROSS JOIN city_names b
 ),
 summary AS (
     SELECT time_bucket('1 h', time), city_name,
